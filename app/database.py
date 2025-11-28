@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 class DatabaseManager:
     """Manage SQLite database for vehicle detection logging."""
     
-    def __init__(self, db_path: str = '/var/www/html/george-jetson/db/db.sqlite3'):
+    def __init__(self, db_path: str = '/opt/george-jetson/db/db.sqlite3'):
         """
         Initialize database manager.
         

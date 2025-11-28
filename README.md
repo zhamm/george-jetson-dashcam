@@ -75,15 +75,19 @@ python3 -c "import tensorrt; print(tensorrt.__version__)"
 ### 2. Clone and Setup Project
 
 ```bash
-cd /var/www/html
-git clone <repository-url> george-jetson
+# Clone to /opt directory (recommended location)
+cd /opt
+sudo git clone https://github.com/zhamm/george-jetson-dashcam.git george-jetson
 cd george-jetson
+
+# Set ownership to current user
+sudo chown -R $USER:$USER /opt/george-jetson
 
 # Make run script executable
 chmod +x run.sh
 
-# Run setup
-./run.sh setup
+# Run automated installation
+sudo bash INSTALL.sh
 ```
 
 ### 3. Install Dependencies
@@ -123,12 +127,12 @@ python3 -c "import torchvision; print(torchvision.models.list_models())"
 
 ## Configuration
 
-Edit configuration in `/var/www/html/george-jetson/app/utils.py`:
+Edit configuration in `/opt/george-jetson/app/utils.py`:
 
 ```python
 DEFAULT_CONFIG = {
     'VIDEO_DIR': '/videos',                    # Video output directory
-    'DB_PATH': '/var/www/html/george-jetson/db/db.sqlite3',
+    'DB_PATH': '/opt/george-jetson/db/db.sqlite3',
     'SEGMENT_DURATION': 300,                   # 5 minutes in seconds
     'VIDEO_WIDTH': 1920,
     'VIDEO_HEIGHT': 1080,
@@ -389,8 +393,8 @@ After=network.target
 [Service]
 Type=simple
 User=jetson
-WorkingDirectory=/var/www/html/george-jetson
-ExecStart=/bin/bash /var/www/html/george-jetson/run.sh start
+WorkingDirectory=/opt/george-jetson
+ExecStart=/bin/bash /opt/george-jetson/run.sh start
 Restart=on-failure
 RestartSec=10
 

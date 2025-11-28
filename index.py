@@ -7,7 +7,7 @@ import os
 import json
 from pathlib import Path
 
-PROJECT_ROOT = Path("/var/www/html/george-jetson")
+PROJECT_ROOT = Path("/opt/george-jetson")
 
 PROJECT_INDEX = {
     "project": {
@@ -404,7 +404,7 @@ def print_formatted_index():
         print(f"  {step}")
     
     print("\n" + "="*80)
-    print("Project location: /var/www/html/george-jetson/".center(80))
+    print("Project location: /opt/george-jetson/".center(80))
     print("Status: COMPLETE AND PRODUCTION-READY ✓".center(80))
     print("="*80 + "\n")
 

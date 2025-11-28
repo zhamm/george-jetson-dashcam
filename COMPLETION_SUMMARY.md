@@ -4,7 +4,7 @@
 
 A **complete, production-grade dashcam application** has been built for NVIDIA Jetson Orin Nano Super with full GPU acceleration, AI vehicle detection, GPS integration, and web-based management.
 
-**Location:** `/var/www/html/george-jetson/`
+**Location:** `/opt/george-jetson/`
 
 ---
 
@@ -335,7 +335,7 @@ CREATE INDEX idx_video_filename ON vehicle_events(video_filename);
 
 ### Installation (Automated)
 ```bash
-cd /var/www/html/george-jetson
+cd /opt/george-jetson
 chmod +x INSTALL.sh
 ./INSTALL.sh
 ```
@@ -503,4 +503,4 @@ The application is **100% complete and ready for production use** on Jetson Orin
 
 **Created:** November 27, 2025  
 **Status:** ✅ COMPLETE AND PRODUCTION-READY  
-**Location:** `/var/www/html/george-jetson/`
+**Location:** `/opt/george-jetson/`

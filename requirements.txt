@@ -48,8 +48,8 @@ python-dateutil>=2.8.0
 # - OpenCV with CUDA support
 
 # To create a virtual environment:
-# python3 -m venv /var/www/html/george-jetson/venv
-# source /var/www/html/george-jetson/venv/bin/activate
+# python3 -m venv /opt/george-jetson/venv
+# source /opt/george-jetson/venv/bin/activate
 # pip install -r requirements.txt
 
 # To check GPU availability:

@@ -17,7 +17,7 @@ class DiskCleanupManager:
     """Manage disk space by cleaning old videos and logs."""
     
     def __init__(self, video_dir: str = '/videos',
-                 db_path: str = '/var/www/html/george-jetson/db/db.sqlite3',
+                 db_path: str = '/opt/george-jetson/db/db.sqlite3',
                  min_free_percent: float = 10.0,
                  retention_days: int = 30,
                  check_interval: int = 300):

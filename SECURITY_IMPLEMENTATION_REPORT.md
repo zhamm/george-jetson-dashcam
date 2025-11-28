@@ -215,13 +215,13 @@ setup_logging()
 for i in range(100000):
     logging.info(f'Test log {i}')
 "
-ls -lh /var/www/html/george-jetson/logs/
+ls -lh /opt/george-jetson/logs/
 
 # 4. Test production mode
 python3 app/main.py --production
 
 # 5. Verify permissions
-ls -la /var/www/html/george-jetson/ | grep -E "db|logs"
+ls -la /opt/george-jetson/ | grep -E "db|logs"
 # Should show: drwx------ (700)
 ```
 
@@ -257,7 +257,7 @@ ls -la /var/www/html/george-jetson/ | grep -E "db|logs"
 
 ### For Development
 ```bash
-cd /var/www/html/george-jetson
+cd /opt/george-jetson
 bash INSTALL.sh
 bash run.sh start
 # Access: http://localhost:8089
@@ -340,7 +340,7 @@ sudo ufw deny 8089/tcp  # Block direct access
 ### Regular Tasks
 - **Weekly:** Review logs for suspicious activity
   ```bash
-  tail -100 /var/www/html/george-jetson/logs/dashcam.log | grep "Failed login"
+  tail -100 /opt/george-jetson/logs/dashcam.log | grep "Failed login"
   ```
 
 - **Monthly:** Update system packages
@@ -359,10 +359,10 @@ df -h /videos
 sudo systemctl status george-jetson-dashcam
 
 # Check log rotation
-ls -lh /var/www/html/george-jetson/logs/
+ls -lh /opt/george-jetson/logs/
 
 # Monitor rate limiting
-grep "locked IP" /var/www/html/george-jetson/logs/dashcam.log
+grep "locked IP" /opt/george-jetson/logs/dashcam.log
 ```
 
 ---

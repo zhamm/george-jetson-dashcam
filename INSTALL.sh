@@ -5,7 +5,7 @@
 
 set -e
 
-PROJECT_HOME="/var/www/html/george-jetson"
+PROJECT_HOME="/opt/george-jetson"
 JETPACK_VERSION="5.0"
 
 # Colors
@@ -184,7 +184,7 @@ echo_info "Step 7: Configuring application..."
 cat > "$PROJECT_HOME/config.ini" << 'EOF'
 [dashcam]
 video_dir = /videos
-db_path = /var/www/html/george-jetson/db/db.sqlite3
+db_path = /opt/george-jetson/db/db.sqlite3
 segment_duration = 300
 video_width = 1920
 video_height = 1080
@@ -216,7 +216,7 @@ echo_info "Step 8: Initializing database..."
 
 python3 << 'PYTHON_EOF'
 import sys
-sys.path.insert(0, '/var/www/html/george-jetson/app')
+sys.path.insert(0, '/opt/george-jetson/app')
 
 from database import DatabaseManager
 
@@ -255,7 +255,7 @@ echo ""
 echo_info "Testing database..."
 python3 << 'PYTHON_EOF'
 import sys
-sys.path.insert(0, '/var/www/html/george-jetson/app')
+sys.path.insert(0, '/opt/george-jetson/app')
 from database import DatabaseManager
 db = DatabaseManager()
 print(f"Database OK")
@@ -265,7 +265,7 @@ echo ""
 echo_info "Testing GPS module..."
 python3 -c "
 import sys
-sys.path.insert(0, '/var/www/html/george-jetson/app')
+sys.path.insert(0, '/opt/george-jetson/app')
 from gps_reader import GPSReader
 print('GPS module OK')
 " || echo_warning "GPS module has dependency issues"

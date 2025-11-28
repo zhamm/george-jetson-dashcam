@@ -140,7 +140,7 @@ Deployment:
 
 STEP 1: AUTOMATED INSTALLATION (10-15 minutes)
 ────────────────────────────────────────────
-  cd /var/www/html/george-jetson
+  cd /opt/george-jetson
   bash INSTALL.sh
 
   This will:
@@ -177,7 +177,7 @@ STEP 4: VERIFY INSTALLATION
                          PROJECT STRUCTURE
 ================================================================================
 
-/var/www/html/george-jetson/
+/opt/george-jetson/
 ├── app/                          # Core application
 │   ├── main.py                  (orchestrator)
 │   ├── video_recorder.py        (video + GPU)
@@ -486,7 +486,7 @@ Quality:
 ================================================================================
 
 1. INSTALLATION (10-15 minutes):
-   cd /var/www/html/george-jetson
+   cd /opt/george-jetson
    bash INSTALL.sh
 
 2. CONFIGURATION:
@@ -541,7 +541,7 @@ Ready for:
 ================================================================================
 
 PROJECT LOCATION:
-/var/www/html/george-jetson/
+/opt/george-jetson/
 
 CREATED: November 27, 2025
 VERSION: 1.0.0

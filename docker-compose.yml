@@ -16,7 +16,7 @@ services:
     volumes:
       # Mount videos directory to host
       - /videos:/videos:rw
-      - /var/www/html/george-jetson:/app:rw
+      - /opt/george-jetson:/app:rw
       
       # Mount devices
       - /dev:/dev:rw

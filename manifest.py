@@ -9,7 +9,7 @@ import sys
 import json
 from pathlib import Path
 
-PROJECT_ROOT = "/var/www/html/george-jetson"
+PROJECT_ROOT = "/opt/george-jetson"
 
 # Project structure definition
 PROJECT_STRUCTURE = {
@@ -279,7 +279,7 @@ def show_quick_start():
     
     print("""
   1. Installation:
-     cd /var/www/html/george-jetson
+     cd /opt/george-jetson
      chmod +x INSTALL.sh
      ./INSTALL.sh
 
@@ -309,7 +309,7 @@ def show_folder_tree():
     print_section("PROJECT FOLDER STRUCTURE")
     
     tree = """
-  /var/www/html/george-jetson/
+  /opt/george-jetson/
   ├── app/
   │   ├── __init__.py
   │   ├── main.py                 # Main application controller

@@ -11,7 +11,7 @@ from typing import Tuple, Optional
 logger = logging.getLogger(__name__)
 
 
-def setup_logging(log_file: str = "/var/www/html/george-jetson/logs/dashcam.log",
+def setup_logging(log_file: str = "/opt/george-jetson/logs/dashcam.log",
                  max_bytes: int = 10 * 1024 * 1024,  # 10 MB
                  backup_count: int = 5):
     """
@@ -203,7 +203,7 @@ class ConfigManager:
 # Default configuration
 DEFAULT_CONFIG = {
     'VIDEO_DIR': '/videos',
-    'DB_PATH': '/var/www/html/george-jetson/db/db.sqlite3',
+    'DB_PATH': '/opt/george-jetson/db/db.sqlite3',
     'SEGMENT_DURATION': 300,  # 5 minutes in seconds
     'VIDEO_WIDTH': 1920,
     'VIDEO_HEIGHT': 1080,

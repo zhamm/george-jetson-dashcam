@@ -258,7 +258,7 @@ These tests work without any dependencies:
 
 ### Full Test Suite
 ```bash
-cd /var/www/html/george-jetson
+cd /opt/george-jetson
 python3 run_tests.py
 ```
 

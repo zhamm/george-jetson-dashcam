@@ -2,7 +2,7 @@
   GEORGE JETSON DASHCAM - COMPLETE FILES MANIFEST
 ================================================================================
 
-Project Root: /var/www/html/george-jetson/
+Project Root: /opt/george-jetson/
 Total Files: 22
 Total Size: 268 KB
 Total Code: 6,112 lines
@@ -332,7 +332,7 @@ Ready for immediate deployment on Jetson Orin Nano Super.
 Ready for custom modifications and extensions.
 Ready for production use with proper security setup.
 
-Location: /var/www/html/george-jetson/
+Location: /opt/george-jetson/
 Created: November 27, 2025
 Status: COMPLETE ✓
 

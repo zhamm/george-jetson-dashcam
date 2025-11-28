@@ -87,7 +87,7 @@ def run(self, debug: bool = False, production: bool = False):
 ```python
 from logging.handlers import RotatingFileHandler
 
-def setup_logging(log_file: str = "/var/www/html/george-jetson/logs/dashcam.log",
+def setup_logging(log_file: str = "/opt/george-jetson/logs/dashcam.log",
                  max_bytes: int = 10 * 1024 * 1024,  # 10 MB
                  backup_count: int = 5):
     file_handler = RotatingFileHandler(
@@ -324,10 +324,10 @@ echo "5. REVIEW LOGS regularly"
    ```bash
    # Generate large logs
    for i in {1..100000}; do
-       echo "Test log entry $i" >> /var/www/html/george-jetson/logs/dashcam.log
+       echo "Test log entry $i" >> /opt/george-jetson/logs/dashcam.log
    done
    # Check rotation occurred
-   ls -lh /var/www/html/george-jetson/logs/
+   ls -lh /opt/george-jetson/logs/
    ```
 
 ---
@@ -338,7 +338,7 @@ echo "5. REVIEW LOGS regularly"
 
 1. **Update Web Server:**
    ```bash
-   cd /var/www/html/george-jetson
+   cd /opt/george-jetson
    # Backup current version
    cp app/web_server.py app/web_server.py.backup
    # Copy new version
@@ -353,8 +353,8 @@ echo "5. REVIEW LOGS regularly"
 
 3. **Update Permissions:**
    ```bash
-   chmod 700 /var/www/html/george-jetson/db
-   chmod 700 /var/www/html/george-jetson/logs
+   chmod 700 /opt/george-jetson/db
+   chmod 700 /opt/george-jetson/logs
    ```
 
 4. **Restart Service:**

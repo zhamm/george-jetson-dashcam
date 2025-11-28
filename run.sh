@@ -5,7 +5,7 @@
 
 set -e
 
-PROJECT_DIR="/var/www/html/george-jetson"
+PROJECT_DIR="/opt/george-jetson"
 APP_DIR="$PROJECT_DIR/app"
 VENV_DIR="$PROJECT_DIR/venv"
 LOG_FILE="$PROJECT_DIR/logs/dashcam.log"

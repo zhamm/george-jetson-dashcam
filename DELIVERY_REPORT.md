@@ -247,7 +247,7 @@ CREATE TABLE vehicle_events (
 
 ### Option 1: Direct Execution (Recommended for Development)
 ```bash
-cd /var/www/html/george-jetson
+cd /opt/george-jetson
 bash INSTALL.sh
 bash run.sh start
 # Access: http://localhost:8089
@@ -473,7 +473,7 @@ The application is ready for **immediate deployment** on NVIDIA Jetson Orin Nano
 
 ---
 
-**Project Location:** `/var/www/html/george-jetson/`  
+**Project Location:** `/opt/george-jetson/`  
 **Status:** ✅ COMPLETE  
 **Date:** November 27, 2025  
 **Version:** 1.0.0  

@@ -38,7 +38,7 @@ Comprehensive unit and integration tests for security features and core function
 
 ### Run All Tests
 ```bash
-cd /var/www/html/george-jetson
+cd /opt/george-jetson
 python3 run_tests.py
 ```
 
@@ -240,13 +240,13 @@ coverage html  # Generate HTML report
 ### Import Errors
 ```bash
 # Ensure project is in Python path
-export PYTHONPATH=/var/www/html/george-jetson:$PYTHONPATH
+export PYTHONPATH=/opt/george-jetson:$PYTHONPATH
 ```
 
 ### Permission Errors
 ```bash
 # Ensure test directories are writable
-chmod 755 /var/www/html/george-jetson/tests
+chmod 755 /opt/george-jetson/tests
 ```
 
 ### Missing Dependencies

@@ -11,7 +11,7 @@ import time
 from datetime import datetime
 
 # Add app directory to path
-sys.path.insert(0, '/var/www/html/george-jetson/app')
+sys.path.insert(0, '/opt/george-jetson/app')
 
 from utils import setup_logging, DEFAULT_CONFIG, ConfigManager
 from database import DatabaseManager
