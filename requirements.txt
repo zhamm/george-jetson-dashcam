@@ -1,0 +1,56 @@
+# George Jetson Dashcam - Python Dependencies
+# Install with: pip install -r requirements.txt
+
+# Core dependencies
+numpy>=1.21.0
+opencv-python>=4.5.0
+opencv-contrib-python>=4.5.0
+
+# GPS/Serial communication
+pyserial>=3.5
+
+# Database
+sqlite3-python>=1.0.0
+
+# Web framework
+Flask>=2.0.0
+Werkzeug>=2.0.0
+
+# GPU/AI (Jetson-specific)
+# These should be pre-installed with JetPack
+# tensorrt>=8.0.0
+# torch>=1.9.0
+# torchvision>=0.10.0
+# cuda-python>=11.6.0
+
+# Image processing
+Pillow>=8.0.0
+
+# Utilities
+requests>=2.25.0
+python-dateutil>=2.8.0
+
+# Optional: For performance profiling
+# psutil>=5.8.0
+
+# Optional: For web server deployment
+# gunicorn>=20.1.0
+# uWSGI>=2.0.20
+
+# Optional: For video processing with GPU
+# gstreamer>=1.18.0
+
+# Note: For Jetson Orin Nano, use JetPack installation:
+# - JetPack 5.0+
+# - TensorRT 8.0+
+# - CUDA 11.4+
+# - cuDNN 8.2+
+# - OpenCV with CUDA support
+
+# To create a virtual environment:
+# python3 -m venv /var/www/html/george-jetson/venv
+# source /var/www/html/george-jetson/venv/bin/activate
+# pip install -r requirements.txt
+
+# To check GPU availability:
+# python3 -c "import cv2; print(cv2.cuda.getCudaEnabledDeviceCount())"

@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>George Jetson Dashcam - Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f7fa;
+            color: #333;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        header h1 {
+            font-size: 1.5rem;
+        }
+        
+        header a {
+            color: white;
+            text-decoration: none;
+            margin-left: 2rem;
+            padding: 0.5rem 1rem;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+        
+        header a:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .stat-icon {
+            font-size: 2.5rem;
+        }
+        
+        .stat-info h3 {
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .section {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            margin-bottom: 2rem;
+        }
+        
+        .section h2 {
+            margin-bottom: 1.5rem;
+            color: #333;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 0.5rem;
+        }
+        
+        .search-form {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        label {
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #555;
+            font-size: 0.9rem;
+        }
+        
+        input,
+        select {
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 0.9rem;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus,
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        button {
+            padding: 0.75rem 1.5rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+        
+        .results-table thead {
+            background: #f5f5f5;
+        }
+        
+        .results-table th,
+        .results-table td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .results-table th {
+            font-weight: 600;
+            color: #555;
+        }
+        
+        .results-table tbody tr:hover {
+            background: #f9f9f9;
+        }
+        
+        .video-row {
+            cursor: pointer;
+        }
+        
+        .video-row:hover {
+            background: #f0f0f0;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        
+        .status-ok {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+        
+        .status-warning {
+            background: #fff3e0;
+            color: #e65100;
+        }
+        
+        .status-error {
+            background: #ffebee;
+            color: #c62828;
+        }
+        
+        .video-player {
+            width: 100%;
+            max-width: 800px;
+            margin-top: 1.5rem;
+        }
+        
+        video {
+            width: 100%;
+            border-radius: 5px;
+            background: #000;
+        }
+        
+        .disk-status {
+            margin-top: 1rem;
+        }
+        
+        .disk-bar {
+            height: 20px;
+            background: #eee;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 0.5rem;
+        }
+        
+        .disk-usage {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 2rem;
+            color: #999;
+        }
+        
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>🚗 George Jetson Dashcam</h1>
+        <a href="/logout">Logout</a>
+    </header>
+    
+    <div class="container">
+        <!-- Stats Cards -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon">📊</div>
+                <div class="stat-info">
+                    <h3>Total Events</h3>
+                    <div class="stat-value" id="stat-total">0</div>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon">🎥</div>
+                <div class="stat-info">
+                    <h3>Today's Events</h3>
+                    <div class="stat-value" id="stat-today">0</div>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon">🏎️</div>
+                <div class="stat-info">
+                    <h3>Unique Plates</h3>
+                    <div class="stat-value" id="stat-plates">0</div>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon">💾</div>
+                <div class="stat-info">
+                    <h3>Disk Usage</h3>
+                    <div class="stat-value" id="stat-disk">0%</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Search Section -->
+        <div class="section">
+            <h2>🔍 Search Events</h2>
+            
+            <form class="search-form" id="searchForm">
+                <div class="form-group">
+                    <label for="startDate">Start Date</label>
+                    <input type="date" id="startDate" name="start_date">
+                </div>
+                
+                <div class="form-group">
+                    <label for="endDate">End Date</label>
+                    <input type="date" id="endDate" name="end_date">
+                </div>
+                
+                <div class="form-group">
+                    <label for="licensePlate">License Plate</label>
+                    <input type="text" id="licensePlate" name="license_plate" placeholder="e.g., ABC123">
+                </div>
+                
+                <div class="form-group">
+                    <label for="color">Color</label>
+                    <input type="text" id="color" name="color" placeholder="e.g., Red">
+                </div>
+                
+                <div class="form-group">
+                    <label for="make">Make</label>
+                    <input type="text" id="make" name="make" placeholder="e.g., Honda">
+                </div>
+                
+                <div class="form-group">
+                    <label for="model">Model</label>
+                    <input type="text" id="model" name="model" placeholder="e.g., Civic">
+                </div>
+                
+                <div class="form-group">
+                    <button type="submit">Search</button>
+                </div>
+                <div class="form-group">
+                    <button type="button" onclick="exportResults()">Export CSV</button>
+                </div>
+            </form>
+            
+            <div id="resultsContainer"></div>
+        </div>
+        
+        <!-- Videos Section -->
+        <div class="section">
+            <h2>🎬 Recent Videos</h2>
+            
+            <div id="videosList"></div>
+        </div>
+        
+        <!-- Disk Management -->
+        <div class="section">
+            <h2>💾 Disk Management</h2>
+            
+            <div id="diskStatus" class="disk-status"></div>
+            
+            <button onclick="triggerCleanup()" style="margin-top: 1rem;">Clean Old Files</button>
+        </div>
+    </div>
+    
+    <script>
+        // Load stats on page load
+        function loadStats() {
+            Promise.all([
+                fetch('/api/stats').then(r => r.json()),
+                fetch('/api/disk-usage').then(r => r.json()),
+                fetch('/api/videos').then(r => r.json())
+            ]).then(([stats, disk, videos]) => {
+                document.getElementById('stat-total').textContent = stats.stats.total_events || 0;
+                document.getElementById('stat-today').textContent = stats.stats.today_events || 0;
+                document.getElementById('stat-plates').textContent = stats.stats.unique_plates || 0;
+                document.getElementById('stat-disk').textContent = disk.usage.percent_used.toFixed(1) + '%';
+                
+                updateDiskStatus(disk.usage);
+                loadVideos(videos.videos);
+            }).catch(e => console.error('Error loading stats:', e));
+        }
+        
+        function updateDiskStatus(usage) {
+            const percent = usage.percent_used;
+            const statusClass = percent > 80 ? 'status-error' : percent > 60 ? 'status-warning' : 'status-ok';
+            
+            document.getElementById('diskStatus').innerHTML = `
+                <div>
+                    <strong>Disk Space</strong><br>
+                    Free: ${formatBytes(usage.free)} / Total: ${formatBytes(usage.total)}<br>
+                    <div class="disk-bar">
+                        <div class="disk-usage" style="width: ${percent}%">
+                            ${percent.toFixed(1)}%
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+        
+        function loadVideos(videos) {
+            const container = document.getElementById('videosList');
+            
+            if (!videos || videos.length === 0) {
+                container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">🎥</div>No videos found</div>';
+                return;
+            }
+            
+            let html = '<table class="results-table"><thead><tr><th>Filename</th><th>Date</th><th>Size</th><th>Action</th></tr></thead><tbody>';
+            
+            videos.slice(0, 10).forEach(video => {
+                html += `
+                    <tr>
+                        <td>${video.filename}</td>
+                        <td>${video.modified_time}</td>
+                        <td>${video.size_mb} MB</td>
+                        <td><a href="/video/${video.filename}" target="_blank">Watch</a></td>
+                    </tr>
+                `;
+            });
+            
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+        
+        function handleSearch(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(document.getElementById('searchForm'));
+            const data = {
+                start_date: formData.get('start_date'),
+                end_date: formData.get('end_date'),
+                license_plate: formData.get('license_plate'),
+                color: formData.get('color'),
+                make: formData.get('make'),
+                model: formData.get('model'),
+                limit: 100
+            };
+            
+            document.getElementById('resultsContainer').innerHTML = '<div class="loading"></div> Searching...';
+            
+            fetch('/api/search', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            })
+            .then(r => r.json())
+            .then(result => {
+                if (!result.success) {
+                    document.getElementById('resultsContainer').innerHTML = '<p style="color: red;">Error: ' + result.error + '</p>';
+                    return;
+                }
+                
+                if (!result.events || result.events.length === 0) {
+                    document.getElementById('resultsContainer').innerHTML = '<div class="empty-state"><div class="empty-state-icon">🔍</div>No events found</div>';
+                    return;
+                }
+                
+                let html = `<p>Found ${result.count} events</p>`;
+                html += '<table class="results-table"><thead><tr><th>Timestamp</th><th>Video</th><th>Plate</th><th>Vehicle</th><th>GPS</th><th>Confidence</th></tr></thead><tbody>';
+                
+                result.events.forEach(event => {
+                    const gps = event.lat ? `${event.lat.toFixed(4)}, ${event.lon.toFixed(4)}` : 'N/A';
+                    html += `
+                        <tr>
+                            <td>${event.timestamp}</td>
+                            <td><a href="/video/${event.video_filename}" target="_blank">View</a></td>
+                            <td>${event.license_plate || '-'}</td>
+                            <td>${event.car_description || '-'}</td>
+                            <td>${gps}</td>
+                            <td>${(event.confidence * 100).toFixed(0)}%</td>
+                        </tr>
+                    `;
+                });
+                
+                html += '</tbody></table>';
+                document.getElementById('resultsContainer').innerHTML = html;
+            })
+            .catch(e => {
+                document.getElementById('resultsContainer').innerHTML = '<p style="color: red;">Error: ' + e.message + '</p>';
+            });
+        }
+        
+        function exportResults() {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            
+            let url = '/api/export';
+            if (startDate || endDate) {
+                const params = new URLSearchParams();
+                if (startDate) params.append('start_date', startDate);
+                if (endDate) params.append('end_date', endDate);
+                url += '?' + params.toString();
+            }
+            
+            window.location.href = url;
+        }
+        
+        function triggerCleanup() {
+            if (confirm('Delete old files?')) {
+                fetch('/api/cleanup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'cleanup' })
+                })
+                .then(r => r.json())
+                .then(result => {
+                    alert(result.message);
+                    loadStats();
+                })
+                .catch(e => alert('Error: ' + e.message));
+            }
+        }
+        
+        // Attach search form handler
+        document.getElementById('searchForm').addEventListener('submit', handleSearch);
+        
+        // Load stats on page load and refresh every 30 seconds
+        loadStats();
+        setInterval(loadStats, 30000);
+    </script>
+</body>
+</html>

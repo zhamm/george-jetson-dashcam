@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  dashcam:
+    image: nvcr.io/nvidia/l4t-base:r35.1
+    container_name: george-jetson-dashcam
+    
+    # Required for GPU access on Jetson
+    runtime: nvidia
+    
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=all
+      - DISPLAY=:0
+    
+    volumes:
+      # Mount videos directory to host
+      - /videos:/videos:rw
+      - /var/www/html/george-jetson:/app:rw
+      
+      # Mount devices
+      - /dev:/dev:rw
+      - /sys:/sys:ro
+      
+      # X11 socket for display (optional)
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+    
+    ports:
+      # Web dashboard
+      - "8089:8089"
+    
+    # Allow device access (GPS, camera, etc)
+    devices:
+      - /dev/ttyUSB0:/dev/ttyUSB0
+      - /dev/video0:/dev/video0
+    
+    # Privileged mode for device access
+    privileged: true
+    
+    # Keep container running
+    stdin_open: true
+    tty: true
+    
+    # Restart policy
+    restart: unless-stopped
+    
+    # Working directory
+    working_dir: /app
+    
+    # Command to run
+    command: bash -c "
+      apt-get update && 
+      apt-get install -y python3 python3-pip ffmpeg &&
+      pip install -r requirements.txt &&
+      python3 app/main.py
+    "
+
+volumes:
+  videos:
+    driver: local
+
+networks:
+  default:
+    name: jetson-dashcam-net
