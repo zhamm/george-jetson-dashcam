@@ -74,6 +74,15 @@ echo_success "System dependencies installed"
 echo ""
 echo_info "Step 3: Setting up project directory..."
 
+# Determine the correct user (handle sudo invocation)
+INSTALL_USER="${SUDO_USER:-$USER}"
+if [ -z "$INSTALL_USER" ] || [ "$INSTALL_USER" = "root" ]; then
+    echo_warning "Running as root. Please specify the user who will run the application:"
+    read -p "Username: " INSTALL_USER
+fi
+
+echo_info "Installing for user: $INSTALL_USER"
+
 sudo mkdir -p "$PROJECT_HOME"
 sudo mkdir -p "$PROJECT_HOME/app"
 sudo mkdir -p "$PROJECT_HOME/db"
@@ -83,10 +92,25 @@ sudo mkdir -p "$PROJECT_HOME/logs"
 sudo mkdir -p "$PROJECT_HOME/templates"
 sudo mkdir -p "$PROJECT_HOME/static"
 
-sudo chown -R $USER:$USER "$PROJECT_HOME"
-chmod -R 755 "$PROJECT_HOME"
+# Set ownership
+sudo chown -R "$INSTALL_USER:$INSTALL_USER" "$PROJECT_HOME"
 
-echo_success "Project directory created: $PROJECT_HOME"
+# Set restrictive permissions
+# Root directory: owner can read/write/execute
+chmod 750 "$PROJECT_HOME"
+# App code: owner read/write, group/others read
+chmod 755 "$PROJECT_HOME/app"
+# Sensitive directories: owner only
+chmod 700 "$PROJECT_HOME/db"
+chmod 700 "$PROJECT_HOME/logs"
+# Videos: owner read/write
+chmod 750 "$PROJECT_HOME/videos"
+# Models and templates: standard read
+chmod 755 "$PROJECT_HOME/models"
+chmod 755 "$PROJECT_HOME/templates"
+chmod 755 "$PROJECT_HOME/static"
+
+echo_success "Project directory created with secure permissions: $PROJECT_HOME"
 
 # ============================================
 # Step 4: Create Virtual Environment
@@ -315,6 +339,9 @@ echo_info "Step 12: Creating systemd service (optional)..."
 read -p "Create systemd service? (y/n) " -n 1 -r
 echo
 if [[ $REPLY =~ ^[Yy]$ ]]; then
+    # Get the home directory for the install user
+    INSTALL_HOME=$(eval echo ~"$INSTALL_USER")
+    
     sudo tee /etc/systemd/system/george-jetson-dashcam.service > /dev/null << EOF
 [Unit]
 Description=George Jetson Dashcam Service
@@ -323,12 +350,13 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-User=$USER
+User=$INSTALL_USER
 WorkingDirectory=$PROJECT_HOME
 ExecStart=/bin/bash $PROJECT_HOME/run.sh start
 Restart=always
 RestartSec=10
-Environment="HOME=$HOME"
+Environment="HOME=$INSTALL_HOME"
+Environment="FLASK_SECRET_KEY=$(openssl rand -hex 32)"
 StandardOutput=journal
 StandardError=journal
 
@@ -337,7 +365,8 @@ WantedBy=multi-user.target
 EOF
 
     sudo systemctl daemon-reload
-    echo_success "Systemd service installed"
+    echo_success "Systemd service installed for user: $INSTALL_USER"
+    echo_info "Service uses randomly generated Flask secret key"
     echo "Enable with: sudo systemctl enable george-jetson-dashcam"
     echo "Start with: sudo systemctl start george-jetson-dashcam"
 fi
@@ -363,6 +392,22 @@ echo "   Password: admin"
 echo ""
 echo "Or use startup script:"
 echo "   $PROJECT_HOME/run.sh start"
+echo ""
+echo ""
+echo_warning "⚠️  SECURITY RECOMMENDATIONS FOR PRODUCTION:"
+echo "1. CHANGE DEFAULT CREDENTIALS immediately!"
+echo "   Edit app/utils.py and update ADMIN_USER and ADMIN_PASS"
+echo ""
+echo "2. USE HTTPS with a reverse proxy (nginx/Apache)"
+echo "   The web server is exposed on 0.0.0.0 (all interfaces)"
+echo ""
+echo "3. SET FLASK_SECRET_KEY environment variable"
+echo "   export FLASK_SECRET_KEY=\$(openssl rand -hex 32)"
+echo ""
+echo "4. CONFIGURE FIREWALL to restrict access to port 8089"
+echo "   sudo ufw allow from TRUSTED_IP to any port 8089"
+echo ""
+echo "5. REVIEW LOGS regularly: $PROJECT_HOME/logs/dashcam.log"
 echo ""
 echo "For more information, see: $PROJECT_HOME/README.md"
 echo ""

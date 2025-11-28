@@ -1,0 +1,15 @@
+# Test dependencies for George Jetson Dashcam
+# Install with: pip install -r requirements-test.txt
+
+# Core dependencies (should already be installed from main requirements.txt)
+Flask>=2.0.0
+werkzeug>=2.0.0
+
+# Testing frameworks (may already be in Python standard library)
+# unittest is built-in to Python 3
+
+# Optional: For coverage reports
+# coverage>=6.0
+
+# Optional: For mocking (already in Python 3.3+)
+# mock is built-in as unittest.mock

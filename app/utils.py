@@ -4,23 +4,48 @@ Utility functions for George Jetson Dashcam
 import os
 import cv2
 import logging
+from logging.handlers import RotatingFileHandler
 from datetime import datetime
 from typing import Tuple, Optional
 
 logger = logging.getLogger(__name__)
 
 
-def setup_logging(log_file: str = "/var/www/html/george-jetson/logs/dashcam.log"):
-    """Configure logging for the application."""
+def setup_logging(log_file: str = "/var/www/html/george-jetson/logs/dashcam.log",
+                 max_bytes: int = 10 * 1024 * 1024,  # 10 MB
+                 backup_count: int = 5):
+    """
+    Configure logging for the application with rotation.
+    
+    Args:
+        log_file: Path to log file
+        max_bytes: Maximum size of log file before rotation (default 10MB)
+        backup_count: Number of backup files to keep (default 5)
+    """
     os.makedirs(os.path.dirname(log_file), exist_ok=True)
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-        handlers=[
-            logging.FileHandler(log_file),
-            logging.StreamHandler()
-        ]
+    
+    # Create rotating file handler
+    file_handler = RotatingFileHandler(
+        log_file,
+        maxBytes=max_bytes,
+        backupCount=backup_count
     )
+    file_handler.setLevel(logging.INFO)
+    
+    # Create console handler
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.INFO)
+    
+    # Create formatter
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    file_handler.setFormatter(formatter)
+    console_handler.setFormatter(formatter)
+    
+    # Configure root logger
+    root_logger = logging.getLogger()
+    root_logger.setLevel(logging.INFO)
+    root_logger.addHandler(file_handler)
+    root_logger.addHandler(console_handler)
 
 
 def overlay_text_on_frame(frame: cv2.Mat, text_lines: list, position: Tuple[int, int] = (10, 30),

@@ -209,13 +209,22 @@ class VideoRecorder:
         """Close FFmpeg encoder process."""
         if self.writer:
             try:
-                self.writer.stdin.close()
+                if self.writer.stdin:
+                    self.writer.stdin.close()
                 self.writer.wait(timeout=5)
+                logger.debug("Encoder closed successfully")
+            except subprocess.TimeoutExpired:
+                logger.warning("Encoder did not close in time, forcing termination")
+                self.writer.kill()
+                self.writer.wait()
             except Exception as e:
                 logger.error(f"Error closing encoder: {e}")
-                self.writer.kill()
-            
-            self.writer = None
+                try:
+                    self.writer.kill()
+                except:
+                    pass
+            finally:
+                self.writer = None
     
     def _start_new_segment(self):
         """Start a new video segment."""
@@ -231,52 +240,62 @@ class VideoRecorder:
     
     def _recording_loop(self):
         """Main recording loop (runs in background thread)."""
-        self.cap = self._get_camera_source()
-        
-        if not self.cap:
-            logger.error("Failed to open camera")
-            self.running = False
-            return
-        
-        self._start_new_segment()
-        
-        while self.running:
-            try:
-                ret, frame = self.cap.read()
-                
-                if not ret:
-                    logger.warning("Failed to read frame from camera")
-                    time.sleep(0.1)
-                    continue
-                
-                # Resize if needed
-                if frame.shape[1] != self.width or frame.shape[0] != self.height:
-                    frame = cv2.resize(frame, (self.width, self.height))
-                
-                # Apply overlay data via callback
-                if self.on_frame_callback:
-                    overlay_data = self.on_frame_callback()
-                    if overlay_data:
-                        frame = self._apply_overlay(frame, overlay_data)
-                
-                # Write frame to FFmpeg encoder
-                if self.writer and self.writer.stdin:
-                    try:
-                        self.writer.stdin.write(frame.tobytes())
-                    except Exception as e:
-                        logger.error(f"Error writing frame to encoder: {e}")
+        try:
+            self.cap = self._get_camera_source()
+            
+            if not self.cap:
+                logger.error("Failed to open camera")
+                self.running = False
+                return
+            
+            self._start_new_segment()
+            
+            while self.running:
+                try:
+                    ret, frame = self.cap.read()
+                    
+                    if not ret:
+                        logger.warning("Failed to read frame from camera")
+                        time.sleep(0.1)
+                        continue
+                    
+                    # Resize if needed
+                    if frame.shape[1] != self.width or frame.shape[0] != self.height:
+                        frame = cv2.resize(frame, (self.width, self.height))
+                    
+                    # Apply overlay data via callback
+                    if self.on_frame_callback:
+                        overlay_data = self.on_frame_callback()
+                        if overlay_data:
+                            frame = self._apply_overlay(frame, overlay_data)
+                    
+                    # Write frame to FFmpeg encoder
+                    if self.writer and self.writer.stdin:
+                        try:
+                            self.writer.stdin.write(frame.tobytes())
+                        except Exception as e:
+                            logger.error(f"Error writing frame to encoder: {e}")
+                            self._start_new_segment()
+                    
+                    self.frame_count += 1
+                    
+                    # Check if segment duration exceeded
+                    if time.time() - self.current_segment_start >= self.segment_duration:
+                        logger.info(f"Segment duration reached, starting new segment")
                         self._start_new_segment()
                 
-                self.frame_count += 1
-                
-                # Check if segment duration exceeded
-                if time.time() - self.current_segment_start >= self.segment_duration:
-                    logger.info(f"Segment duration reached, starting new segment")
-                    self._start_new_segment()
-            
-            except Exception as e:
-                logger.error(f"Error in recording loop: {e}")
-                time.sleep(0.1)
+                except Exception as e:
+                    logger.error(f"Error in recording loop: {e}")
+                    time.sleep(0.1)
+        
+        except Exception as e:
+            logger.error(f"Critical error in recording loop: {e}")
+        
+        finally:
+            # Ensure resources are cleaned up even on error
+            logger.info("Cleaning up camera and encoder resources")
+            self._close_encoder()
+            self._close_camera()
     
     def _apply_overlay(self, frame: cv2.Mat, overlay_data: dict) -> cv2.Mat:
         """
