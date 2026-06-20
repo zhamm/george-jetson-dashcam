@@ -249,7 +249,7 @@ DEFAULT_CONFIG = {
     'LOG_FILE': os.path.join(LOG_DIR, 'dashcam.log'),
     'AI_CONFIDENCE_THRESHOLD': 0.5,
     'AI_INFERENCE_FPS': 5,
-    'AI_MODEL': os.environ.get("GEORGE_JETSON_AI_MODEL", "yolo11n.pt"),
+    'AI_MODEL': os.environ.get("GEORGE_JETSON_AI_MODEL", "yolo26s.pt"),
     'AI_MODEL_PATH': os.environ.get("GEORGE_JETSON_AI_MODEL_PATH"),
     'AI_ALPR_ENABLED': os.environ.get("GEORGE_JETSON_ALPR_ENABLED", "1") != "0",
     'OVERLAY_POSITION': (10, 30),

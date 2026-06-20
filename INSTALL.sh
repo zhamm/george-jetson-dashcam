@@ -170,8 +170,8 @@ else
     echo_warning "OpenALPR runtime data not found"
 fi
 
-# Note: Stanford Cars model is loaded from torchvision
-echo_info "Stanford Cars model will be downloaded on first run"
+# Note: YOLO model is downloaded by Ultralytics on first run unless pre-provisioned
+echo_info "YOLO model (default: yolo26s.pt) will be downloaded on first run"
 
 # ============================================
 # Step 7: Configure Application

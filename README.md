@@ -22,6 +22,7 @@ A production-grade dashcam application for NVIDIA Jetson Orin Nano Super with re
 
 ✅ **Data Logging**
 - SQLite3 database with vehicle detection events
+- Per-event segment bookmark offsets (`bookmark_ms`) for NVR-style seek
 - Indexed queries for fast searches
 - Export to CSV functionality
 
@@ -119,7 +120,7 @@ mkdir -p models/openalpr
 sudo cp /usr/share/openalpr/runtime_data/* models/openalpr/
 
 # YOLO model (auto-downloaded on first run if internet is available)
-# Default: yolo11n.pt (override via GEORGE_JETSON_AI_MODEL)
+# Default: yolo26s.pt (override via GEORGE_JETSON_AI_MODEL)
 ```
 
 ## Configuration
@@ -144,7 +145,7 @@ DEFAULT_CONFIG = {
     'ADMIN_PASS': 'admin',                     # CHANGE IN PRODUCTION
     'AI_CONFIDENCE_THRESHOLD': 0.5,
     'AI_INFERENCE_FPS': 5,
-    'AI_MODEL': 'yolo11n.pt',
+    'AI_MODEL': 'yolo26s.pt',
     'AI_MODEL_PATH': None,                     # Optional local model path
     'AI_ALPR_ENABLED': True,                   # Requires `alpr` CLI in PATH
 }
@@ -240,6 +241,7 @@ CREATE TABLE vehicle_events (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     timestamp TEXT NOT NULL,              -- Event timestamp
     video_filename TEXT NOT NULL,          -- Associated video file
+    bookmark_ms INTEGER,                   -- Milliseconds offset in video segment
     lat REAL,                              -- Latitude coordinate
     lon REAL,                              -- Longitude coordinate
     license_plate TEXT,                    -- Detected license plate
@@ -278,7 +280,7 @@ For production deployment, export models to TensorRT:
 from ultralytics import YOLO
 
 # Export YOLO model to TensorRT engine
-model = YOLO("yolo11n.pt")
+model = YOLO("yolo26s.pt")
 model.export(format="engine", device=0, half=True)
 ```
 
