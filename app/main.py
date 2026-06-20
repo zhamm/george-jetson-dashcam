@@ -103,7 +103,7 @@ class GeorgJetsonDashcam:
                 confidence_threshold=self.config.get('AI_CONFIDENCE_THRESHOLD')
             )
             self.ai_detector.set_detections_callback(self._on_ai_detection)
-            self.recorder.set_on_raw_frame_callback(self.ai_detector.set_input_frame)
+            self.recorder.set_on_raw_frame_callback(self._on_raw_frame)
             
             # Disk Cleanup Manager
             logger.info("Initializing disk cleanup manager...")
@@ -204,6 +204,16 @@ class GeorgJetsonDashcam:
         """Called when new GPS data arrives."""
         if data['has_fix']:
             logger.debug(f"GPS: Lat={data['latitude']:.6f}, Lon={data['longitude']:.6f}, Sats={data['satellites']}")
+
+    def _on_raw_frame(self, frame, frame_metadata: dict = None):
+        """Attach GPS snapshot to captured frame metadata before AI inference."""
+        metadata = (frame_metadata or {}).copy()
+        gps_data = self.gps.get_current_data() if self.gps else {}
+
+        metadata['gps_lat'] = gps_data.get('smoothed_latitude') or gps_data.get('latitude')
+        metadata['gps_lon'] = gps_data.get('smoothed_longitude') or gps_data.get('longitude')
+        metadata['gps_timestamp'] = gps_data.get('timestamp')
+        self.ai_detector.set_input_frame(frame, frame_metadata=metadata)
     
     def _get_overlay_data(self) -> dict:
         """Get overlay data for current frame."""
@@ -234,7 +244,6 @@ class GeorgJetsonDashcam:
         """Called when AI detection finds vehicles."""
         current_segment = self.recorder.get_current_segment()
         gps_data = self.gps.get_current_data()
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         
         for detection in detections:
             if detection.make and detection.model:
@@ -246,16 +255,19 @@ class GeorgJetsonDashcam:
             
             # Log to database
             self.db.log_vehicle_event(
-                timestamp=timestamp,
-                video_filename=current_segment or "",
-                lat=gps_data.get('latitude'),
-                lon=gps_data.get('longitude'),
+                timestamp=detection.timestamp,
+                video_filename=detection.video_filename or current_segment or "",
+                lat=detection.gps_lat if detection.gps_lat is not None else gps_data.get('latitude'),
+                lon=detection.gps_lon if detection.gps_lon is not None else gps_data.get('longitude'),
                 license_plate=detection.license_plate,
                 car_description=car_desc,
+                bookmark_ms=detection.bookmark_ms,
                 confidence=detection.confidence
             )
             
-            logger.info(f"Detection: {car_desc} [{detection.license_plate}] at {timestamp}")
+            logger.info(
+                f"Detection: {car_desc} [{detection.license_plate}] at {detection.timestamp}"
+            )
     
     def run_web_server(self, debug: bool = False):
         """Run web server (blocking)."""

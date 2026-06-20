@@ -39,6 +39,7 @@ class DatabaseManager:
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
                         timestamp TEXT NOT NULL,
                         video_filename TEXT NOT NULL,
+                        bookmark_ms INTEGER,
                         lat REAL,
                         lon REAL,
                         license_plate TEXT,
@@ -64,6 +65,12 @@ class DatabaseManager:
                     CREATE INDEX IF NOT EXISTS idx_video_filename 
                     ON vehicle_events(video_filename)
                 ''')
+
+                # Backward-compatible migration for existing databases.
+                cursor.execute("PRAGMA table_info(vehicle_events)")
+                existing_cols = {row[1] for row in cursor.fetchall()}
+                if 'bookmark_ms' not in existing_cols:
+                    cursor.execute('ALTER TABLE vehicle_events ADD COLUMN bookmark_ms INTEGER')
                 
                 conn.commit()
                 logger.info(f"Database initialized at {self.db_path}")
@@ -75,12 +82,14 @@ class DatabaseManager:
                          lat: Optional[float], lon: Optional[float],
                          license_plate: Optional[str], car_description: Optional[str],
                          timestamp: Optional[str] = None,
+                         bookmark_ms: Optional[int] = None,
                          confidence: float = 0.0) -> bool:
         """
         Log a vehicle detection event.
         
         Args:
             timestamp: Event timestamp (YYYY-MM-DD HH:MM:SS), defaults to now
+            bookmark_ms: Milliseconds offset within video segment for NVR-style bookmarks
             video_filename: Associated video file
             lat: Latitude coordinate
             lon: Longitude coordinate
@@ -98,9 +107,18 @@ class DatabaseManager:
                     cursor = conn.cursor()
                     cursor.execute('''
                         INSERT INTO vehicle_events 
-                        (timestamp, video_filename, lat, lon, license_plate, car_description, confidence)
-                        VALUES (?, ?, ?, ?, ?, ?, ?)
-                    ''', (event_timestamp, video_filename, lat, lon, license_plate, car_description, confidence))
+                        (timestamp, video_filename, bookmark_ms, lat, lon, license_plate, car_description, confidence)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    ''', (
+                        event_timestamp,
+                        video_filename,
+                        bookmark_ms,
+                        lat,
+                        lon,
+                        license_plate,
+                        car_description,
+                        confidence
+                    ))
                     conn.commit()
             return True
         except sqlite3.IntegrityError:
@@ -294,7 +312,7 @@ class DatabaseManager:
                 return False
             
             with open(output_file, 'w', newline='') as csvfile:
-                fieldnames = ['id', 'timestamp', 'video_filename', 'lat', 'lon', 
+                fieldnames = ['id', 'timestamp', 'video_filename', 'bookmark_ms', 'lat', 'lon',
                             'license_plate', 'car_description', 'confidence']
                 writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
                 

@@ -248,6 +248,27 @@ class VideoRecorder:
             logger.info(f"Started new segment: {self.current_filename}")
         else:
             logger.error("Failed to start encoder process for new segment")
+
+    def _build_frame_metadata(self) -> dict:
+        """Build metadata used to synchronize detections with video segments."""
+        capture_epoch = time.time()
+        with self.lock:
+            segment_filename = self.current_filename
+            segment_start_epoch = self.current_segment_start
+            frame_index = self.frame_count
+
+        metadata = {
+            'capture_epoch': capture_epoch,
+            'capture_iso': datetime.fromtimestamp(capture_epoch).strftime("%Y-%m-%d %H:%M:%S"),
+            'segment_filename': segment_filename,
+            'segment_start_epoch': segment_start_epoch,
+            'frame_index': frame_index,
+        }
+        if segment_start_epoch is not None:
+            metadata['bookmark_ms'] = max(0, int((capture_epoch - segment_start_epoch) * 1000))
+        else:
+            metadata['bookmark_ms'] = None
+        return metadata
     
     def _recording_loop(self):
         """Main recording loop (runs in background thread)."""
@@ -278,8 +299,13 @@ class VideoRecorder:
 
                     consecutive_errors = 0
 
+                    frame_metadata = self._build_frame_metadata()
+
                     if self.on_raw_frame_callback:
                         try:
+                            self.on_raw_frame_callback(frame, frame_metadata)
+                        except TypeError:
+                            # Backward compatibility for older callbacks that only accept frame.
                             self.on_raw_frame_callback(frame)
                         except Exception as e:
                             logger.debug(f"Raw frame callback failed: {e}")

@@ -29,6 +29,10 @@ class Detection:
     confidence: float
     bbox: Tuple[int, int, int, int]
     timestamp: str
+    video_filename: Optional[str] = None
+    bookmark_ms: Optional[int] = None
+    gps_lat: Optional[float] = None
+    gps_lon: Optional[float] = None
 
 
 class ALPRDetector:
@@ -88,7 +92,7 @@ class VehicleDetector:
 
     VEHICLE_LABELS = {"car", "truck", "bus", "motorbike", "motorcycle"}
 
-    def __init__(self, model_path: Optional[str] = None, model_name: str = "yolo11n.pt"):
+    def __init__(self, model_path: Optional[str] = None, model_name: str = "yolo26s.pt"):
         self.model = None
         self.names: Dict[int, str] = {}
         self.model_path = model_path
@@ -109,7 +113,9 @@ class VehicleDetector:
             )
             self.model = None
 
-    def detect(self, frame: np.ndarray, confidence_threshold: float) -> List[Detection]:
+    def detect(
+        self, frame: np.ndarray, confidence_threshold: float, frame_metadata: Optional[Dict] = None
+    ) -> List[Detection]:
         if self.model is None:
             return []
 
@@ -130,7 +136,12 @@ class VehicleDetector:
             )
 
         detections: List[Detection] = []
-        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        metadata = frame_metadata or {}
+        now = metadata.get("capture_iso") or datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        video_filename = metadata.get("segment_filename")
+        bookmark_ms = metadata.get("bookmark_ms")
+        gps_lat = metadata.get("gps_lat")
+        gps_lon = metadata.get("gps_lon")
         for result in results:
             boxes = getattr(result, "boxes", None)
             if boxes is None:
@@ -154,6 +165,10 @@ class VehicleDetector:
                         confidence=conf,
                         bbox=(x1, y1, x2, y2),
                         timestamp=now,
+                        video_filename=video_filename,
+                        bookmark_ms=bookmark_ms,
+                        gps_lat=gps_lat,
+                        gps_lon=gps_lon,
                     )
                 )
         return detections
@@ -165,7 +180,7 @@ class AIDetector:
     def __init__(
         self,
         model_path: Optional[str] = None,
-        model_name: str = "yolo11n.pt",
+        model_name: str = "yolo26s.pt",
         alpr_enabled: bool = True,
         inference_fps: int = 5,
         confidence_threshold: float = 0.5,
@@ -182,6 +197,7 @@ class AIDetector:
         self.last_inference_time = 0.0
 
         self.current_frame = None
+        self.current_frame_meta: Dict = {}
         self.current_frame_lock = threading.Lock()
 
         self.latest_detections: List[Detection] = []
@@ -189,10 +205,11 @@ class AIDetector:
 
         self.on_detections_callback: Optional[Callable] = None
 
-    def set_input_frame(self, frame: np.ndarray):
+    def set_input_frame(self, frame: np.ndarray, frame_metadata: Optional[Dict] = None):
         """Queue a frame for inference."""
         with self.current_frame_lock:
             self.current_frame = frame.copy()
+            self.current_frame_meta = (frame_metadata or {}).copy()
 
     def start(self) -> bool:
         if self.running:
@@ -220,9 +237,10 @@ class AIDetector:
                 if self.current_frame is None:
                     continue
                 frame = self.current_frame.copy()
+                frame_metadata = self.current_frame_meta.copy()
 
             try:
-                detections = self._run_inference(frame)
+                detections = self._run_inference(frame, frame_metadata=frame_metadata)
                 with self.detections_lock:
                     self.latest_detections = detections
                 if self.on_detections_callback and detections:
@@ -230,8 +248,10 @@ class AIDetector:
             except Exception as e:
                 logger.error(f"Error in inference loop: {e}")
 
-    def _run_inference(self, frame: np.ndarray) -> List[Detection]:
-        detections = self.vehicle_detector.detect(frame, self.confidence_threshold)
+    def _run_inference(self, frame: np.ndarray, frame_metadata: Optional[Dict] = None) -> List[Detection]:
+        detections = self.vehicle_detector.detect(
+            frame, self.confidence_threshold, frame_metadata=frame_metadata
+        )
         if not detections:
             return []
 
