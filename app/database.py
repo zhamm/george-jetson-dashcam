@@ -4,6 +4,8 @@ Database Module - SQLite3 logging for vehicle detection events
 import sqlite3
 import threading
 import logging
+from pathlib import Path
+from contextlib import closing
 from datetime import datetime, timedelta
 from typing import List, Dict, Optional, Tuple
 
@@ -27,7 +29,8 @@ class DatabaseManager:
     def _ensure_db_exists(self):
         """Create database and tables if they don't exist."""
         try:
-            with sqlite3.connect(self.db_path) as conn:
+            Path(self.db_path).parent.mkdir(parents=True, exist_ok=True)
+            with closing(sqlite3.connect(self.db_path)) as conn:
                 cursor = conn.cursor()
                 
                 # Create vehicle detection events table
@@ -68,15 +71,16 @@ class DatabaseManager:
             logger.error(f"Error initializing database: {e}")
             raise
     
-    def log_vehicle_event(self, timestamp: str, video_filename: str, 
+    def log_vehicle_event(self, video_filename: str,
                          lat: Optional[float], lon: Optional[float],
                          license_plate: Optional[str], car_description: Optional[str],
+                         timestamp: Optional[str] = None,
                          confidence: float = 0.0) -> bool:
         """
         Log a vehicle detection event.
         
         Args:
-            timestamp: Event timestamp (YYYY-MM-DD HH:MM:SS)
+            timestamp: Event timestamp (YYYY-MM-DD HH:MM:SS), defaults to now
             video_filename: Associated video file
             lat: Latitude coordinate
             lon: Longitude coordinate
@@ -88,14 +92,15 @@ class DatabaseManager:
             True if successful, False otherwise
         """
         try:
+            event_timestamp = timestamp or datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             with self.lock:
-                with sqlite3.connect(self.db_path) as conn:
+                with closing(sqlite3.connect(self.db_path)) as conn:
                     cursor = conn.cursor()
                     cursor.execute('''
                         INSERT INTO vehicle_events 
                         (timestamp, video_filename, lat, lon, license_plate, car_description, confidence)
                         VALUES (?, ?, ?, ?, ?, ?, ?)
-                    ''', (timestamp, video_filename, lat, lon, license_plate, car_description, confidence))
+                    ''', (event_timestamp, video_filename, lat, lon, license_plate, car_description, confidence))
                     conn.commit()
             return True
         except sqlite3.IntegrityError:
@@ -157,13 +162,13 @@ class DatabaseManager:
                     params.append(f"%{model}%")
                 
                 if desc_conditions:
-                    query += ' AND (' + ' OR '.join(desc_conditions) + ')'
+                    query += ' AND (' + ' AND '.join(desc_conditions) + ')'
             
             query += ' ORDER BY timestamp DESC LIMIT ?'
             params.append(limit)
             
             with self.lock:
-                with sqlite3.connect(self.db_path) as conn:
+                with closing(sqlite3.connect(self.db_path)) as conn:
                     conn.row_factory = sqlite3.Row
                     cursor = conn.cursor()
                     cursor.execute(query, params)
@@ -186,7 +191,7 @@ class DatabaseManager:
         """Get all events associated with a video file."""
         try:
             with self.lock:
-                with sqlite3.connect(self.db_path) as conn:
+                with closing(sqlite3.connect(self.db_path)) as conn:
                     conn.row_factory = sqlite3.Row
                     cursor = conn.cursor()
                     cursor.execute(
@@ -213,7 +218,7 @@ class DatabaseManager:
             cutoff_date = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d")
             
             with self.lock:
-                with sqlite3.connect(self.db_path) as conn:
+                with closing(sqlite3.connect(self.db_path)) as conn:
                     cursor = conn.cursor()
                     cursor.execute(
                         'DELETE FROM vehicle_events WHERE timestamp < ?',
@@ -232,7 +237,7 @@ class DatabaseManager:
         """Get database statistics."""
         try:
             with self.lock:
-                with sqlite3.connect(self.db_path) as conn:
+                with closing(sqlite3.connect(self.db_path)) as conn:
                     cursor = conn.cursor()
                     
                     # Total events
@@ -312,12 +317,12 @@ if __name__ == "__main__":
     
     # Log sample events
     db.log_vehicle_event(
-        timestamp=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         video_filename="jetsoncam-20231127-123456.mp4",
         lat=40.7128,
         lon=-74.0060,
         license_plate="ABC123",
         car_description="Red Honda Civic 2020",
+        timestamp=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         confidence=0.95
     )
     

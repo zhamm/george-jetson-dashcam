@@ -15,10 +15,10 @@ A production-grade dashcam application for NVIDIA Jetson Orin Nano Super with re
 - GPS overlay on video and database logging
 
 ✅ **AI Vehicle Detection (GPU-Accelerated)**
-- Automatic License Plate Recognition (ALPR) with OpenALPR
-- Vehicle attribute classification (make, model, color)
-- TensorRT optimization for 5+ FPS inference on Jetson
-- Stanford Cars Dataset model integration
+- YOLO-based vehicle detection pipeline (car/truck/bus/motorcycle)
+- Optional license plate recognition via OpenALPR CLI (`alpr`)
+- Configurable confidence threshold and inference FPS
+- TensorRT-ready workflow for Jetson deployment
 
 ✅ **Data Logging**
 - SQLite3 database with vehicle detection events
@@ -118,21 +118,18 @@ sudo apt-get install -y \
 mkdir -p models/openalpr
 sudo cp /usr/share/openalpr/runtime_data/* models/openalpr/
 
-# Stanford Cars classifier (optional - included in torchvision)
-# For custom model, download from:
-# https://ai.stanford.edu/~jkrause/cars/car_dataset.html
-
-python3 -c "import torchvision; print(torchvision.models.list_models())"
+# YOLO model (auto-downloaded on first run if internet is available)
+# Default: yolo11n.pt (override via GEORGE_JETSON_AI_MODEL)
 ```
 
 ## Configuration
 
-Edit configuration in `/opt/george-jetson/app/utils.py`:
+Edit configuration in `app/utils.py` (or set environment variables):
 
 ```python
 DEFAULT_CONFIG = {
-    'VIDEO_DIR': '/videos',                    # Video output directory
-    'DB_PATH': '/opt/george-jetson/db/db.sqlite3',
+    'VIDEO_DIR': '<project_root>/videos',
+    'DB_PATH': '<project_root>/db/db.sqlite3',
     'SEGMENT_DURATION': 300,                   # 5 minutes in seconds
     'VIDEO_WIDTH': 1920,
     'VIDEO_HEIGHT': 1080,
@@ -147,6 +144,9 @@ DEFAULT_CONFIG = {
     'ADMIN_PASS': 'admin',                     # CHANGE IN PRODUCTION
     'AI_CONFIDENCE_THRESHOLD': 0.5,
     'AI_INFERENCE_FPS': 5,
+    'AI_MODEL': 'yolo11n.pt',
+    'AI_MODEL_PATH': None,                     # Optional local model path
+    'AI_ALPR_ENABLED': True,                   # Requires `alpr` CLI in PATH
 }
 ```
 
@@ -275,18 +275,11 @@ ffmpeg -f rawvideo -pixel_format bgr24 -video_size 1920x1080 \
 For production deployment, export models to TensorRT:
 
 ```python
-import torch
-import tensorrt as trt
+from ultralytics import YOLO
 
-# Convert PyTorch model to TensorRT engine
-model = torch.hub.load('pytorch/vision:v0.10.0', 'resnet50', pretrained=True)
-model.eval()
-
-# Export to ONNX
-torch.onnx.export(model, dummy_input, "model.onnx")
-
-# Convert ONNX to TensorRT
-# Use trtexec: /usr/src/tensorrt/bin/trtexec --onnx=model.onnx --saveEngine=model.trt
+# Export YOLO model to TensorRT engine
+model = YOLO("yolo11n.pt")
+model.export(format="engine", device=0, half=True)
 ```
 
 ## Troubleshooting

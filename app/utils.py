@@ -7,11 +7,20 @@ import logging
 from logging.handlers import RotatingFileHandler
 from datetime import datetime
 from typing import Tuple, Optional
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
 
-def setup_logging(log_file: str = "/opt/george-jetson/logs/dashcam.log",
+class AutoClosingRotatingFileHandler(RotatingFileHandler):
+    """Rotating handler that closes the file after each emit (Windows-safe for tests)."""
+
+    def emit(self, record):
+        super().emit(record)
+        self.close()
+
+
+def setup_logging(log_file: str = None,
                  max_bytes: int = 10 * 1024 * 1024,  # 10 MB
                  backup_count: int = 5):
     """
@@ -22,13 +31,18 @@ def setup_logging(log_file: str = "/opt/george-jetson/logs/dashcam.log",
         max_bytes: Maximum size of log file before rotation (default 10MB)
         backup_count: Number of backup files to keep (default 5)
     """
+    if not log_file:
+        log_file = str(Path(DEFAULT_CONFIG['LOG_DIR']) / "dashcam.log")
+
     os.makedirs(os.path.dirname(log_file), exist_ok=True)
+    Path(log_file).touch(exist_ok=True)
     
     # Create rotating file handler
-    file_handler = RotatingFileHandler(
+    file_handler = AutoClosingRotatingFileHandler(
         log_file,
         maxBytes=max_bytes,
-        backupCount=backup_count
+        backupCount=backup_count,
+        delay=True,
     )
     file_handler.setLevel(logging.INFO)
     
@@ -44,6 +58,16 @@ def setup_logging(log_file: str = "/opt/george-jetson/logs/dashcam.log",
     # Configure root logger
     root_logger = logging.getLogger()
     root_logger.setLevel(logging.INFO)
+
+    # Avoid duplicate handlers when setup_logging is called multiple times.
+    for handler in root_logger.handlers[:]:
+        if isinstance(handler, (RotatingFileHandler, logging.StreamHandler)):
+            root_logger.removeHandler(handler)
+            try:
+                handler.close()
+            except Exception:
+                pass
+
     root_logger.addHandler(file_handler)
     root_logger.addHandler(console_handler)
 
@@ -201,9 +225,14 @@ class ConfigManager:
 
 
 # Default configuration
+PROJECT_ROOT = os.environ.get(
+    "GEORGE_JETSON_ROOT",
+    str(Path(__file__).resolve().parent.parent)
+)
+LOG_DIR = os.path.join(PROJECT_ROOT, "logs")
 DEFAULT_CONFIG = {
-    'VIDEO_DIR': '/videos',
-    'DB_PATH': '/opt/george-jetson/db/db.sqlite3',
+    'VIDEO_DIR': os.environ.get("GEORGE_JETSON_VIDEO_DIR", os.path.join(PROJECT_ROOT, "videos")),
+    'DB_PATH': os.path.join(PROJECT_ROOT, "db", "db.sqlite3"),
     'SEGMENT_DURATION': 300,  # 5 minutes in seconds
     'VIDEO_WIDTH': 1920,
     'VIDEO_HEIGHT': 1080,
@@ -216,8 +245,13 @@ DEFAULT_CONFIG = {
     'WEB_HOST': '0.0.0.0',
     'ADMIN_USER': 'admin',
     'ADMIN_PASS': 'admin',
+    'LOG_DIR': LOG_DIR,
+    'LOG_FILE': os.path.join(LOG_DIR, 'dashcam.log'),
     'AI_CONFIDENCE_THRESHOLD': 0.5,
     'AI_INFERENCE_FPS': 5,
+    'AI_MODEL': os.environ.get("GEORGE_JETSON_AI_MODEL", "yolo11n.pt"),
+    'AI_MODEL_PATH': os.environ.get("GEORGE_JETSON_AI_MODEL_PATH"),
+    'AI_ALPR_ENABLED': os.environ.get("GEORGE_JETSON_ALPR_ENABLED", "1") != "0",
     'OVERLAY_POSITION': (10, 30),
     'OVERLAY_FONT_SCALE': 0.7,
     'OVERLAY_THICKNESS': 2,
