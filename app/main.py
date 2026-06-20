@@ -1,25 +1,27 @@
-"""
-George Jetson Dashcam - Main Application
-Integrated dashcam system with GPU-accelerated AI detection
-"""
+"""Main application orchestrator for the dashcam stack."""
 import sys
-import os
 import logging
 import argparse
 import signal
 import time
 from datetime import datetime
 
-# Add app directory to path
-sys.path.insert(0, '/opt/george-jetson/app')
-
-from utils import setup_logging, DEFAULT_CONFIG, ConfigManager
-from database import DatabaseManager
-from gps_reader import GPSReader
-from video_recorder import VideoRecorder
-from ai_detector import AIDetector
-from cleanup import DiskCleanupManager
-from web_server import DashcamWebServer
+try:
+    from .utils import setup_logging, DEFAULT_CONFIG, ConfigManager
+    from .database import DatabaseManager
+    from .gps_reader import GPSReader
+    from .video_recorder import VideoRecorder
+    from .ai_detector import AIDetector
+    from .cleanup import DiskCleanupManager
+    from .web_server import DashcamWebServer
+except ImportError:
+    from utils import setup_logging, DEFAULT_CONFIG, ConfigManager
+    from database import DatabaseManager
+    from gps_reader import GPSReader
+    from video_recorder import VideoRecorder
+    from ai_detector import AIDetector
+    from cleanup import DiskCleanupManager
+    from web_server import DashcamWebServer
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +39,7 @@ class GeorgJetsonDashcam:
         self.config = ConfigManager(config or DEFAULT_CONFIG)
         
         # Setup logging
-        setup_logging()
+        setup_logging(log_file=self.config.get('LOG_FILE'))
         logger.info("=" * 60)
         logger.info("George Jetson Dashcam Application Starting")
         logger.info(f"Start time: {datetime.now()}")
@@ -94,10 +96,14 @@ class GeorgJetsonDashcam:
             # AI Detector
             logger.info("Initializing AI detector...")
             self.ai_detector = AIDetector(
+                model_path=self.config.get('AI_MODEL_PATH'),
+                model_name=self.config.get('AI_MODEL'),
+                alpr_enabled=self.config.get('AI_ALPR_ENABLED', True),
                 inference_fps=self.config.get('AI_INFERENCE_FPS'),
                 confidence_threshold=self.config.get('AI_CONFIDENCE_THRESHOLD')
             )
             self.ai_detector.set_detections_callback(self._on_ai_detection)
+            self.recorder.set_on_raw_frame_callback(self.ai_detector.set_input_frame)
             
             # Disk Cleanup Manager
             logger.info("Initializing disk cleanup manager...")
@@ -146,14 +152,14 @@ class GeorgJetsonDashcam:
             if not self.gps.wait_for_fix(timeout=30):
                 logger.warning("No GPS fix acquired, continuing anyway")
             
+            # Start AI detector
+            if not self.ai_detector.start():
+                logger.warning("Failed to start AI detector")
+
             # Start video recorder
             if not self.recorder.start():
                 logger.error("Failed to start video recorder")
                 return False
-            
-            # Start AI detector
-            if not self.ai_detector.start():
-                logger.warning("Failed to start AI detector")
             
             # Start disk cleanup manager
             if not self.cleanup.start():
@@ -231,12 +237,17 @@ class GeorgJetsonDashcam:
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         
         for detection in detections:
-            car_desc = f"{detection.color} {detection.make} {detection.model}" if detection.make else "Unknown"
+            if detection.make and detection.model:
+                car_desc = f"{detection.color or ''} {detection.make} {detection.model}".strip()
+            elif detection.vehicle_type:
+                car_desc = detection.vehicle_type
+            else:
+                car_desc = "Unknown"
             
             # Log to database
             self.db.log_vehicle_event(
                 timestamp=timestamp,
-                video_filename=current_segment,
+                video_filename=current_segment or "",
                 lat=gps_data.get('latitude'),
                 lon=gps_data.get('longitude'),
                 license_plate=detection.license_plate,

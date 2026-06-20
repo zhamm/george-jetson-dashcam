@@ -4,6 +4,8 @@ Web Dashboard - Flask-based web portal for video search, playback, and monitorin
 import os
 import logging
 import secrets
+import tempfile
+from pathlib import Path
 from datetime import datetime, timedelta
 from functools import wraps
 from collections import defaultdict
@@ -40,9 +42,10 @@ class DashcamWebServer:
         self.port = port
         
         # Setup Flask app
+        repo_root = Path(__file__).resolve().parent.parent
         self.app = Flask(__name__, 
-                        template_folder='templates',
-                        static_folder='static')
+                        template_folder=str(repo_root / 'templates'),
+                        static_folder=str(repo_root / 'static'))
         # Generate random secret key for session security
         self.app.secret_key = os.environ.get('FLASK_SECRET_KEY', secrets.token_hex(32))
         
@@ -230,7 +233,7 @@ class DashcamWebServer:
             """Stream video file."""
             try:
                 # Validate filename to prevent directory traversal
-                if '..' in filename or '/' in filename:
+                if '..' in filename or '/' in filename or '\\' in filename:
                     return 'Invalid filename', 400
                 
                 filepath = os.path.join(self.video_dir, filename)
@@ -250,10 +253,11 @@ class DashcamWebServer:
             try:
                 start_date = request.args.get('start_date')
                 end_date = request.args.get('end_date')
-                
-                export_file = '/tmp/dashcam_export.csv'
+
+                tmp_dir = tempfile.gettempdir()
+                export_file = os.path.join(tmp_dir, 'dashcam_export.csv')
                 if self.db.export_csv(export_file, start_date=start_date, end_date=end_date):
-                    return send_file(export_file, as_attachment=True, 
+                    return send_file(export_file, as_attachment=True,
                                    download_name='dashcam_events.csv')
                 else:
                     return 'No events to export', 400
@@ -351,9 +355,13 @@ class DashcamWebServer:
 # Example usage
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
-    
-    from database import DatabaseManager
-    from cleanup import DiskCleanupManager
+
+    try:
+        from .database import DatabaseManager
+        from .cleanup import DiskCleanupManager
+    except ImportError:
+        from database import DatabaseManager
+        from cleanup import DiskCleanupManager
     
     db = DatabaseManager()
     cleanup = DiskCleanupManager()

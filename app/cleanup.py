@@ -6,6 +6,7 @@ import shutil
 import logging
 import threading
 import time
+from contextlib import closing
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import List, Dict
@@ -18,6 +19,7 @@ class DiskCleanupManager:
     
     def __init__(self, video_dir: str = '/videos',
                  db_path: str = '/opt/george-jetson/db/db.sqlite3',
+                 db_manager=None,
                  min_free_percent: float = 10.0,
                  retention_days: int = 30,
                  check_interval: int = 300):
@@ -27,12 +29,14 @@ class DiskCleanupManager:
         Args:
             video_dir: Directory containing video files
             db_path: Path to database file
+            db_manager: Optional DatabaseManager instance
             min_free_percent: Minimum free disk percentage (e.g., 10%)
             retention_days: Retain logs for this many days
             check_interval: Check disk space every N seconds
         """
         self.video_dir = video_dir
         self.db_path = db_path
+        self.db_manager = db_manager
         self.min_free_percent = min_free_percent
         self.retention_days = retention_days
         self.check_interval = check_interval
@@ -118,11 +122,11 @@ class DiskCleanupManager:
         
         if percent_free < self.min_free_percent:
             logger.warning(f"Low disk space: {percent_free:.1f}% free (min: {self.min_free_percent}%)")
-            return self.cleanup_old_files()
+            return self.cleanup_old_files() > 0
         
         return False
     
-    def cleanup_old_files(self, days: int = None) -> bool:
+    def cleanup_old_files(self, days: int = None) -> int:
         """
         Delete old video files and database records.
         
@@ -130,7 +134,7 @@ class DiskCleanupManager:
             days: Delete files older than N days (defaults to retention_days)
         
         Returns:
-            True if cleanup was performed
+            Number of deleted files
         """
         if days is None:
             days = self.retention_days
@@ -144,9 +148,9 @@ class DiskCleanupManager:
         
         if deleted_videos > 0 or deleted_db_records > 0:
             logger.info(f"Cleanup complete: {deleted_videos} videos, {deleted_db_records} DB records deleted")
-            return True
+            return deleted_videos
         
-        return False
+        return 0
     
     def _cleanup_videos(self, cutoff_time: datetime) -> int:
         """
@@ -197,6 +201,9 @@ class DiskCleanupManager:
             Number of deleted records
         """
         try:
+            if self.db_manager:
+                return self.db_manager.delete_old_events(days=days)
+
             import sqlite3
             
             if not os.path.exists(self.db_path):
@@ -204,7 +211,7 @@ class DiskCleanupManager:
             
             cutoff_date = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d")
             
-            with sqlite3.connect(self.db_path) as conn:
+            with closing(sqlite3.connect(self.db_path)) as conn:
                 cursor = conn.cursor()
                 cursor.execute(
                     'DELETE FROM vehicle_events WHERE timestamp < ?',

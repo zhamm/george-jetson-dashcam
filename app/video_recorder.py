@@ -46,6 +46,7 @@ class VideoRecorder:
         
         # Callback for new frames (for overlay data)
         self.on_frame_callback: Optional[Callable] = None
+        self.on_raw_frame_callback: Optional[Callable] = None
         
         # Frame counter
         self.frame_count = 0
@@ -97,6 +98,7 @@ class VideoRecorder:
         
         command = [
             'ffmpeg',
+            '-loglevel', 'error',
             '-f', 'rawvideo',
             '-pixel_format', 'bgr24',
             '-video_size', f'{self.width}x{self.height}',
@@ -116,6 +118,7 @@ class VideoRecorder:
         """Fallback FFmpeg command using software encoding."""
         command = [
             'ffmpeg',
+            '-loglevel', 'error',
             '-f', 'rawvideo',
             '-pixel_format', 'bgr24',
             '-video_size', f'{self.width}x{self.height}',
@@ -148,7 +151,7 @@ class VideoRecorder:
             process = subprocess.Popen(
                 cmd,
                 stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE,
+                stdout=subprocess.DEVNULL,
                 stderr=subprocess.PIPE,
                 bufsize=10**8
             )
@@ -164,7 +167,7 @@ class VideoRecorder:
                 process = subprocess.Popen(
                     cmd,
                     stdin=subprocess.PIPE,
-                    stdout=subprocess.PIPE,
+                    stdout=subprocess.DEVNULL,
                     stderr=subprocess.PIPE,
                     bufsize=10**8
                 )
@@ -216,7 +219,10 @@ class VideoRecorder:
             except subprocess.TimeoutExpired:
                 logger.warning("Encoder did not close in time, forcing termination")
                 self.writer.kill()
-                self.writer.wait()
+                try:
+                    self.writer.wait(timeout=2)
+                except Exception:
+                    pass
             except Exception as e:
                 logger.error(f"Error closing encoder: {e}")
                 try:
@@ -230,13 +236,18 @@ class VideoRecorder:
         """Start a new video segment."""
         self._close_encoder()
         
-        self.current_filename = self._generate_filename()
-        output_path = f"{self.output_dir}/{self.current_filename}"
-        self.current_segment_start = time.time()
-        self.frame_count = 0
+        with self.lock:
+            self.current_filename = self._generate_filename()
+            self.current_segment_start = time.time()
+            self.frame_count = 0
+
+        output_path = str(Path(self.output_dir) / self.current_filename)
         
         self.writer = self._start_ffmpeg_encoder(output_path)
-        logger.info(f"Started new segment: {self.current_filename}")
+        if self.writer:
+            logger.info(f"Started new segment: {self.current_filename}")
+        else:
+            logger.error("Failed to start encoder process for new segment")
     
     def _recording_loop(self):
         """Main recording loop (runs in background thread)."""
@@ -249,6 +260,7 @@ class VideoRecorder:
                 return
             
             self._start_new_segment()
+            consecutive_errors = 0
             
             while self.running:
                 try:
@@ -256,8 +268,21 @@ class VideoRecorder:
                     
                     if not ret:
                         logger.warning("Failed to read frame from camera")
+                        consecutive_errors += 1
+                        if consecutive_errors >= 20:
+                            logger.error("Too many consecutive camera read failures, stopping recorder")
+                            self.running = False
+                            break
                         time.sleep(0.1)
                         continue
+
+                    consecutive_errors = 0
+
+                    if self.on_raw_frame_callback:
+                        try:
+                            self.on_raw_frame_callback(frame)
+                        except Exception as e:
+                            logger.debug(f"Raw frame callback failed: {e}")
                     
                     # Resize if needed
                     if frame.shape[1] != self.width or frame.shape[0] != self.height:
@@ -271,21 +296,32 @@ class VideoRecorder:
                     
                     # Write frame to FFmpeg encoder
                     if self.writer and self.writer.stdin:
+                        if self.writer.poll() is not None:
+                            logger.warning("Encoder process exited unexpectedly, rotating segment")
+                            self._start_new_segment()
+                            continue
                         try:
                             self.writer.stdin.write(frame.tobytes())
                         except Exception as e:
                             logger.error(f"Error writing frame to encoder: {e}")
                             self._start_new_segment()
                     
-                    self.frame_count += 1
+                    with self.lock:
+                        self.frame_count += 1
                     
                     # Check if segment duration exceeded
-                    if time.time() - self.current_segment_start >= self.segment_duration:
+                    current_segment_start = self.current_segment_start or time.time()
+                    if time.time() - current_segment_start >= self.segment_duration:
                         logger.info(f"Segment duration reached, starting new segment")
                         self._start_new_segment()
                 
                 except Exception as e:
                     logger.error(f"Error in recording loop: {e}")
+                    consecutive_errors += 1
+                    if consecutive_errors >= 20:
+                        logger.error("Too many consecutive recorder errors, stopping recorder")
+                        self.running = False
+                        break
                     time.sleep(0.1)
         
         except Exception as e:
@@ -360,6 +396,10 @@ class VideoRecorder:
         - vehicle_detections: list of dicts
         """
         self.on_frame_callback = callback
+
+    def set_on_raw_frame_callback(self, callback: Callable):
+        """Set callback to receive raw camera frames for AI inference."""
+        self.on_raw_frame_callback = callback
     
     def get_current_segment(self) -> Optional[str]:
         """Get current segment filename."""

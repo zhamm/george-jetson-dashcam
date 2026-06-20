@@ -4,13 +4,9 @@
 # Core dependencies
 numpy>=1.21.0
 opencv-python>=4.5.0
-opencv-contrib-python>=4.5.0
 
 # GPS/Serial communication
 pyserial>=3.5
-
-# Database
-sqlite3-python>=1.0.0
 
 # Web framework
 Flask>=2.0.0
@@ -29,6 +25,7 @@ Pillow>=8.0.0
 # Utilities
 requests>=2.25.0
 python-dateutil>=2.8.0
+ultralytics>=8.3.0
 
 # Optional: For performance profiling
 # psutil>=5.8.0

@@ -68,9 +68,9 @@ def print_coverage_summary(result):
     print(f"Skipped: {len(result.skipped)}")
     
     if result.wasSuccessful():
-        print("\n✅ ALL TESTS PASSED!")
+        print("\n[PASS] ALL TESTS PASSED!")
     else:
-        print("\n❌ SOME TESTS FAILED")
+        print("\n[FAIL] SOME TESTS FAILED")
         
         if result.failures:
             print("\nFailures:")
